@@ -7,106 +7,21 @@ import {
 function makeC(light){
   return light ? {
     blp:"#94a3b8",actual:"#16a34a",warn:"#dc2626",amber:"#d97706",
-    bg:"#f0f4f8",panel:"#ffffff",border:"#e8ecf3",muted:"#d4dbe8",sub:"#5a6a85",text:"#0f172a",
-    card:"#f8fafc",nav:"#fafbfd",navBorder:"#e2e8f0",tabActive:"#0f172a",tabInactive:"#f1f5f9",tabInactiveText:"#64748b",
-    tableHead:"#eef2f8",tableRow0:"#ffffff",tableRow1:"#f8fafc",tableHover:"#e0eeff",
+    bg:"#f0f4f8",panel:"#ffffff",border:"#dde3ed",muted:"#c8d3e0",sub:"#475569",text:"#0f172a",
+    card:"#f8fafc",nav:"#fafbfd",navBorder:"#dde3ed",tabActive:"#0f172a",tabInactive:"#f1f5f9",tabInactiveText:"#64748b",
+    tableHead:"#f0f4f8",tableRow0:"#ffffff",tableRow1:"#f7f9fc",tableHover:"#dbeafe",
     inputBg:"#eef2f7",inputBorder:"#c8d3e0",
-    headerText:"#0f172a",subText:"#5a6a85",
+    headerText:"#0f172a",subText:"#475569",
   } : {
     blp:"#475569",actual:"#22c55e",warn:"#ef4444",amber:"#f59e0b",
-    bg:"#080d18",panel:"#0f172a",border:"#1e3a5f",muted:"#2d4a6e",sub:"#94a3b8",text:"#f1f5f9",
-    card:"#0f172a",nav:"#0a1020",navBorder:"#1e3a5f",tabActive:"#162444",tabInactive:"#0a1020",tabInactiveText:"#94a3b8",
-    tableHead:"#0a1628",tableRow0:"#0d1a30",tableRow1:"#0f1d35",tableHover:"#1a2e50",
-    inputBg:"#162030",inputBorder:"#2d4a6e",
+    bg:"#0a0e1a",panel:"#0f172a",border:"#1e293b",muted:"#334155",sub:"#64748b",text:"#e2e8f0",
+    card:"#0f172a",nav:"#0f172a",navBorder:"#1e293b",tabActive:"#1e293b",tabInactive:"#0f172a",tabInactiveText:"#64748b",
+    tableHead:"#0c1220",tableRow0:"#0d1424",tableRow1:"#111a2e",tableHover:"#1a2540",
+    inputBg:"#1e293b",inputBorder:"#334155",
     headerText:"#f8fafc",subText:"#94a3b8",
   };
 }
 // C is defined reactively inside App() via makeC(lightMode)
-
-// ─── WEATHER WIDGET ───────────────────────────────────────────────────────────
-const WEATHER_EMOJI_MAP = {
-  sunny:         { emoji:"☀️",  anim:"spin",    label:"Sunny" },
-  clear:         { emoji:"☀️",  anim:"spin",    label:"Clear" },
-  partly_cloudy: { emoji:"⛅",  anim:"drift",   label:"Partly Sunny" },
-  cloudy:        { emoji:"☁️",  anim:"drift",   label:"Cloudy" },
-  overcast:      { emoji:"🌥️", anim:"drift",   label:"Overcast" },
-  rain:          { emoji:"🌧️", anim:"drip",    label:"Rainy" },
-  drizzle:       { emoji:"🌦️", anim:"drip",    label:"Drizzle" },
-  thunderstorm:  { emoji:"⛈️", anim:"flash",   label:"Thunderstorm" },
-  snow:          { emoji:"❄️",  anim:"fall",    label:"Snowy" },
-  fog:           { emoji:"🌫️", anim:"drift",   label:"Foggy" },
-  windy:         { emoji:"🌬️", anim:"shake",   label:"Windy" },
-  hail:          { emoji:"🌨️", anim:"drip",    label:"Hail" },
-};
-function WeatherWidget({ C }) {
-  const [weather, setWeather] = useState(null);
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    // Inject keyframes once
-    if (!document.getElementById("weather-keyframes")) {
-      const s = document.createElement("style");
-      s.id = "weather-keyframes";
-      s.textContent = `
-        @keyframes wx-spin  { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
-        @keyframes wx-drift { 0%,100%{transform:translateX(0)} 50%{transform:translateX(4px)} }
-        @keyframes wx-drip  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(3px)} }
-        @keyframes wx-flash { 0%,100%{opacity:1} 50%{opacity:0.3} }
-        @keyframes wx-fall  { 0%,100%{transform:translateY(0) rotate(0deg)} 50%{transform:translateY(4px) rotate(20deg)} }
-        @keyframes wx-shake { 0%,100%{transform:rotate(0deg)} 25%{transform:rotate(-8deg)} 75%{transform:rotate(8deg)} }
-        @keyframes wx-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
-      `;
-      document.head.appendChild(s);
-    }
-    // Fetch Singapore weather via Open-Meteo (free, no key)
-    fetch("https://api.open-meteo.com/v1/forecast?latitude=1.3521&longitude=103.8198&current=temperature_2m,weathercode,is_day&temperature_unit=celsius&timezone=Asia%2FSingapore")
-      .then(r => r.json())
-      .then(d => {
-        const code = d.current?.weathercode ?? 1;
-        const temp = Math.round(d.current?.temperature_2m ?? 28);
-        const isDay = d.current?.is_day ?? 1;
-        // WMO code → condition
-        let cond = "sunny";
-        if (code === 0) cond = isDay ? "sunny" : "clear";
-        else if (code <= 2) cond = "partly_cloudy";
-        else if (code <= 3) cond = "cloudy";
-        else if (code <= 49) cond = "fog";
-        else if (code <= 57) cond = "drizzle";
-        else if (code <= 67) cond = "rain";
-        else if (code <= 77) cond = "snow";
-        else if (code <= 82) cond = "rain";
-        else if (code <= 99) cond = "thunderstorm";
-        setWeather({ cond, temp });
-      })
-      .catch(() => setWeather({ cond: "partly_cloudy", temp: 28 })); // fallback
-    // Pulse tick for glow animation
-    const id = setInterval(() => setTick(t => t + 1), 2000);
-    return () => clearInterval(id);
-  }, []);
-
-  if (!weather) return (
-    <div style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", borderRadius:20,
-      border:`1px solid ${C.border}`, background:C.inputBg, fontSize:11, color:C.sub }}>
-      <span style={{ animation:"wx-pulse 1.2s ease-in-out infinite", display:"inline-block" }}>🌡️</span>
-      <span style={{ fontSize:10 }}>SG...</span>
-    </div>
-  );
-  const { emoji, anim, label } = WEATHER_EMOJI_MAP[weather.cond] || WEATHER_EMOJI_MAP.partly_cloudy;
-  const animStyle = { animation:`wx-${anim} ${anim==="spin"?8:anim==="flash"?1.5:2.5}s ease-in-out infinite`, display:"inline-block", fontSize:18, lineHeight:1 };
-  return (
-    <div title={`Singapore · ${label} · ${weather.temp}°C`} style={{
-      display:"flex", alignItems:"center", gap:6, padding:"4px 11px", borderRadius:20,
-      border:`1px solid ${C.border}`, background:C.inputBg, cursor:"default",
-      boxShadow: tick%2===0 ? `0 0 8px ${C.amber}33` : "none",
-      transition:"box-shadow 0.8s ease",
-    }}>
-      <span style={animStyle}>{emoji}</span>
-      <div style={{ display:"flex", flexDirection:"column", lineHeight:1.1 }}>
-        <span style={{ fontSize:11, fontWeight:800, color:C.text }}>{weather.temp}°C</span>
-        <span style={{ fontSize:8, color:C.sub, whiteSpace:"nowrap" }}>SG · {label}</span>
-      </div>
-    </div>
-  );
-}
 
 // ─── ZONE HIERARCHY ───────────────────────────────────────────────────────────
 // 3 main areas matching drawings:
@@ -210,8 +125,7 @@ const ALL_TASKS = [];
 
 // ─── TIMELINE ─────────────────────────────────────────────────────────────────
 const TL_START=new Date("2025-09-01").getTime(),TL_END=new Date("2027-04-30").getTime(),TL_MS=TL_END-TL_START;
-const TODAY=Date.now(),TODAY_P=(TODAY-TL_START)/TL_MS*100;
-const TODAY_LABEL=(()=>{const d=new Date(TODAY);return d.toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"});})();
+const TODAY=new Date("2026-03-05").getTime(),TODAY_P=(TODAY-TL_START)/TL_MS*100;
 function pct(d){if(!d)return null;return Math.max(0,Math.min(100,(new Date(d).getTime()-TL_START)/TL_MS*100));}
 function barW(s,e){const p=pct(s),q=pct(e);return q&&p!==null?Math.max(0.25,q-p):0;}
 // Project Month 1 = Sep 2024
@@ -680,7 +594,7 @@ export default function App() {
         if (firstZoneWithData) {
           const matchedDef = ALL_ZONE_DEFS.find(z => z.taskZones.includes(firstZoneWithData));
           if (matchedDef) {
-            setActiveZoneKey(null); // default to full area overview, user can drill into zone
+            setActiveZoneKey(matchedDef.key);
             const matchedArea = AREA_GROUPS.find(a => a.subgroups.some(sg => sg.zones.some(z => z.key === matchedDef.key)));
             if (matchedArea) setActiveArea(matchedArea.key);
           }
@@ -772,14 +686,15 @@ export default function App() {
       {/* HEADER */}
       <div style={{background:C.nav,borderBottom:`1px solid ${C.border}`,padding:"12px 20px 0 20px"}}>
 
-        {/* ROW 1: Title + Upload  |  Weather top-right */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8,gap:12}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,flexWrap:"wrap",marginBottom:10}}>
+          <div>
             <div style={{fontSize:15,fontWeight:800,color:C.headerText,letterSpacing:-0.3,textTransform:"uppercase"}}>Construction Productivity & Schedule Board</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginLeft:8}}>
             <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{display:"none"}}
               onChange={e=>{ if(e.target.files[0]) parseExcel(e.target.files[0]); e.target.value=""; }}/>
             <button onClick={()=>xlsxReady&&fileInputRef.current.click()} style={{
-              padding:"5px 12px",borderRadius:7,border:`1.5px solid ${uploadedFile?"#22c55e":C.muted}`,
+              padding:"6px 14px",borderRadius:7,border:`1.5px solid ${uploadedFile?"#22c55e":C.muted}`,
               background:uploadedFile?"#22c55e22":C.inputBg,color:uploadedFile?"#22c55e":xlsxReady?C.sub:C.muted,
               cursor:xlsxReady?"pointer":"default",fontSize:11,fontFamily:"inherit",fontWeight:800,display:"flex",alignItems:"center",gap:6
             }}>
@@ -793,24 +708,24 @@ export default function App() {
               }}>✕ Reset</button>
             )}
           </div>
-          {/* Weather — top right, same line as title */}
-          <WeatherWidget C={C}/>
-        </div>
+          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            {/* Light/Dark toggle */}
+            <button onClick={()=>setLightMode(m=>!m)} style={{
+              display:"flex",alignItems:"center",gap:6,padding:"5px 12px",borderRadius:20,
+              border:`1.5px solid ${C.border}`,
+              background:C.inputBg,
+              color:C.text,
+              cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:700,
+              transition:"all 0.2s",whiteSpace:"nowrap"
+            }}>
+              {lightMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
+            </button>
+            <span style={{color:C.sub,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginRight:2}}>Milestone:</span>
+            {MILESTONES.map(m=>(
+              <button key={m} onClick={()=>setActiveMilestone(m)} style={{padding:"4px 9px",borderRadius:5,border:"none",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:800,background:activeMilestone===m?"#ef4444":C.tabInactive,color:activeMilestone===m?"#fff":C.tabInactiveText}}>{m}</button>
+            ))}
+          </div>
 
-        {/* ROW 2: Light/Dark toggle + Milestones */}
-        <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",marginBottom:8}}>
-          <button onClick={()=>setLightMode(m=>!m)} style={{
-            display:"flex",alignItems:"center",gap:6,padding:"4px 12px",borderRadius:20,
-            border:`1.5px solid ${C.border}`,background:C.inputBg,color:C.text,
-            cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:700,
-            transition:"all 0.2s",whiteSpace:"nowrap"
-          }}>
-            {lightMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
-          </button>
-          <span style={{color:C.sub,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginRight:2}}>Milestone:</span>
-          {MILESTONES.map(m=>(
-            <button key={m} onClick={()=>setActiveMilestone(m)} style={{padding:"4px 9px",borderRadius:5,border:"none",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:800,background:activeMilestone===m?"#ef4444":C.tabInactive,color:activeMilestone===m?"#fff":C.tabInactiveText}}>{m}</button>
-          ))}
         </div>
 
         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",paddingBottom:8,borderBottom:`1px solid ${C.border}`}}>
@@ -886,7 +801,7 @@ export default function App() {
           </div>
         ))}
         <div style={{marginLeft:"auto",display:"flex",gap:14,alignItems:"center"}}>
-          <div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:2,height:11,background:C.amber}}/><span style={{color:C.sub,fontSize:10}}>Today {TODAY_LABEL}</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:2,height:11,background:C.amber}}/><span style={{color:C.sub,fontSize:10}}>Today 05 Mar 2026</span></div>
           <div style={{display:"flex",alignItems:"center",gap:5}}><div style={{width:2,height:11,background:"#ef4444"}}/><span style={{color:C.sub,fontSize:10}}>Milestone: {activeMilestone}</span></div>
         </div>
       </div>
@@ -922,15 +837,15 @@ function GanttView({tasks,col,ticks,LW,msEndPct,activeMilestone,MS_RANGES,C}){
       {tooltip && (
         <div style={{
           position:"fixed", left:tooltip.x+14, top:tooltip.y-10, zIndex:9999,
-          background:C.panel, border:`1px solid ${C.border}`, borderRadius:12,
-          padding:"12px 16px", minWidth:260, maxWidth:340, pointerEvents:"none",
-          boxShadow:"0 4px 24px rgba(0,0,0,0.15)"
+          background:C.inputBg, border:`1px solid #334155`, borderRadius:10,
+          padding:"10px 14px", minWidth:260, maxWidth:340, pointerEvents:"none",
+          boxShadow:"0 8px 32px #0008"
         }}>
           <div style={{fontWeight:700,color:C.text,fontSize:12,marginBottom:6,lineHeight:1.4}}>{tooltip.task.activity}</div>
           <div style={{display:"grid",gridTemplateColumns:"90px 1fr",gap:"3px 8px",fontSize:11}}>
-            <span style={{color:C.sub}}>Zone</span><span style={{color:C.text}}>{tooltip.task.zone}</span>
-            <span style={{color:C.sub}}>Level</span><span style={{color:C.text}}>{tooltip.task.level||"—"}</span>
-            <span style={{color:C.sub}}>BLP</span><span style={{color:C.text}}>{tooltip.task.blp_s} → {tooltip.task.blp_e} ({tooltip.task.blp_dur}d)</span>
+            <span style={{color:C.sub}}>Zone</span><span style={{color:C.sub}}>{tooltip.task.zone}</span>
+            <span style={{color:C.sub}}>Level</span><span style={{color:C.sub}}>{tooltip.task.level||"—"}</span>
+            <span style={{color:C.sub}}>BLP</span><span style={{color:"#64748b"}}>{tooltip.task.blp_s} → {tooltip.task.blp_e} ({tooltip.task.blp_dur}d)</span>
             <span style={{color:C.sub}}>Catch Up Plan</span>
             <span style={{color:col,display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
               {tooltip.task.cc_s ? `${tooltip.task.cc_s} → ${tooltip.task.cc_e} (${tooltip.task.cc_dur}d)` : "—"}
@@ -939,34 +854,12 @@ function GanttView({tasks,col,ticks,LW,msEndPct,activeMilestone,MS_RANGES,C}){
                 return d < 0
                   ? <span style={{background:"#22c55e22",color:"#22c55e",fontSize:9,fontWeight:800,padding:"1px 7px",borderRadius:20,border:"1px solid #22c55e66",whiteSpace:"nowrap"}}>⚡ {d}d faster</span>
                   : d > 0
-                  ? <span style={{background:C.amber+"22",color:C.amber,fontSize:9,fontWeight:800,padding:"1px 7px",borderRadius:20,border:`1px solid ${C.amber}55`,whiteSpace:"nowrap"}}>⚠ +{d}d slower</span>
+                  ? <span style={{background:"#1c1400",color:C.amber,fontSize:9,fontWeight:800,padding:"1px 7px",borderRadius:20,border:"1px solid #f59e0b44",whiteSpace:"nowrap"}}>⚠ +{d}d slower</span>
                   : <span style={{color:C.sub,fontSize:9}}>= same</span>;
               })() : null}
             </span>
             <span style={{color:C.sub}}>Site Planned</span><span style={{color:"#22c55e"}}>{tooltip.task.actual_s ? `${tooltip.task.actual_s} → ${tooltip.task.actual_e||"ongoing"}${tooltip.task.actual_e ? ` (${Math.round((new Date(tooltip.task.actual_e)-new Date(tooltip.task.actual_s))/86400000)+1}d)` : ""}` : "—"}</span>
           </div>
-          {(tooltip.task.volume > 0 || tooltip.task.cc_qty > 0 || tooltip.task.site_qty > 0) && (
-            <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${C.border}`,display:"flex",gap:12,flexWrap:"wrap"}}>
-              {tooltip.task.volume > 0 && (
-                <div style={{display:"flex",flexDirection:"column",gap:1}}>
-                  <span style={{fontSize:8,color:C.sub,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>BLP Qty</span>
-                  <span style={{fontSize:13,fontWeight:800,color:C.text,fontFamily:"monospace"}}>{tooltip.task.volume.toLocaleString()}<span style={{fontSize:9,color:C.sub,marginLeft:2}}>m³</span></span>
-                </div>
-              )}
-              {tooltip.task.cc_qty > 0 && (
-                <div style={{display:"flex",flexDirection:"column",gap:1}}>
-                  <span style={{fontSize:8,color:col,fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>CC Qty</span>
-                  <span style={{fontSize:13,fontWeight:800,color:col,fontFamily:"monospace"}}>{tooltip.task.cc_qty.toLocaleString()}<span style={{fontSize:9,color:C.sub,marginLeft:2}}>m³</span></span>
-                </div>
-              )}
-              {tooltip.task.site_qty > 0 && (
-                <div style={{display:"flex",flexDirection:"column",gap:1}}>
-                  <span style={{fontSize:8,color:"#22c55e",fontWeight:700,textTransform:"uppercase",letterSpacing:0.5}}>Site Qty</span>
-                  <span style={{fontSize:13,fontWeight:800,color:"#22c55e",fontFamily:"monospace"}}>{tooltip.task.site_qty.toLocaleString()}<span style={{fontSize:9,color:C.sub,marginLeft:2}}>m³</span></span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
@@ -974,9 +867,9 @@ function GanttView({tasks,col,ticks,LW,msEndPct,activeMilestone,MS_RANGES,C}){
         <div style={{width:LW,minWidth:LW,flexShrink:0,padding:"6px 14px",color:C.sub,fontSize:10,borderRight:`1px solid ${C.border}`,display:"flex",alignItems:"center"}}>ACTIVITY</div>
         <div style={{flex:1,minWidth:700,position:"relative",height:40}}>
           {ticks.map((t,i)=>(
-            <div key={i} style={{position:"absolute",left:`${t.p}%`,top:0,bottom:0,borderLeft:`1px solid ${C.muted}55`,paddingLeft:3,display:"flex",flexDirection:"column",justifyContent:"center",gap:1}}>
+            <div key={i} style={{position:"absolute",left:`${t.p}%`,top:0,bottom:0,borderLeft:`1px solid ${C.border}`,paddingLeft:3,display:"flex",flexDirection:"column",justifyContent:"center",gap:1}}>
               <span style={{fontSize:8,color:"#3b82f6",fontWeight:800,lineHeight:1,whiteSpace:"nowrap"}}>M{t.mNum}</span>
-              <span style={{fontSize:9,color:t.isJan?C.text:C.sub,fontWeight:t.isJan?700:500,lineHeight:1,whiteSpace:"nowrap"}}>{t.isJan?`${t.label} ${t.year}`:t.label}</span>
+              <span style={{fontSize:9,color:t.isJan?C.sub:C.muted,fontWeight:t.isJan?700:400,lineHeight:1,whiteSpace:"nowrap"}}>{t.isJan?`${t.label} ${t.year}`:t.label}</span>
             </div>
           ))}
           <div style={{position:"absolute",left:`${TODAY_P}%`,top:0,bottom:0,width:2,background:C.amber,zIndex:5}}/>
@@ -989,25 +882,24 @@ function GanttView({tasks,col,ticks,LW,msEndPct,activeMilestone,MS_RANGES,C}){
         const zt=tasks.filter(t=>t.zone===zone);
         return(
           <div key={zone}>
-            <div style={{display:"flex",background:col+"10",borderBottom:`1px solid ${col}33`}}>
-              <div style={{width:LW,minWidth:LW,padding:"5px 14px",color:col,fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:0.5,borderRight:`1px solid ${C.border}`,background:col+"28"}}>{zone}</div>
+            <div style={{display:"flex",background:C.panel,borderBottom:`1px solid ${C.border}`}}>
+              <div style={{width:LW,minWidth:LW,padding:"4px 14px",color:col,fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:0.5,borderRight:`1px solid ${C.border}`,background:col+"18"}}>{zone}</div>
               <div style={{flex:1,minWidth:700,position:"relative"}}>
                 <div style={{position:"absolute",left:`${TODAY_P}%`,top:0,bottom:0,width:1,background:C.amber+"44"}}/>
                 {msEndPct!==null&&<div style={{position:"absolute",left:`${msEndPct}%`,top:0,bottom:0,width:1,background:"#ef444466"}}/>}
               </div>
             </div>
-            {zt.map((task,rowIdx)=>{
+            {zt.map(task=>{
               // prefer site_dur from Excel; fall back to CC vs BLP
               const effDur = task.site_dur || task.cc_dur;
               const dayDiff = task.blp_dur && effDur ? effDur - task.blp_dur : null;
               const [msS,msE]=(MS_RANGES[activeMilestone]||[null,null]);
               const inMs=msS&&task.cc_e>=msS&&task.cc_e<=msE;
-              const rowBg = inMs ? col+"18" : rowIdx%2===0 ? C.tableRow0 : C.tableRow1;
               return(
-                <div key={task.id} style={{display:"flex",borderBottom:`1px solid ${C.border}`,height:28,alignItems:"center",background:rowBg}}
-                  onMouseEnter={e=>{e.currentTarget.style.background=C.tableHover;setTooltip({task,x:e.clientX,y:e.clientY});}}
+                <div key={task.id} style={{display:"flex",borderBottom:`1px solid #111827`,height:28,alignItems:"center",background:inMs?"#ffffff06":"transparent"}}
+                  onMouseEnter={e=>{e.currentTarget.style.background=C.panel;setTooltip({task,x:e.clientX,y:e.clientY});}}
                   onMouseMove={e=>setTooltip(tt=>tt?{...tt,x:e.clientX,y:e.clientY}:null)}
-                  onMouseLeave={e=>{e.currentTarget.style.background=rowBg;}}>
+                  onMouseLeave={e=>{e.currentTarget.style.background=inMs?"#ffffff06":"transparent";}}>
                   <div style={{width:LW,minWidth:LW,padding:"0 14px",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"space-between",borderRight:`1px solid ${C.border}`,gap:4}}>
                     <span style={{fontSize:10,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:168}} title={task.activity}>[{task.level}] {task.activity}</span>
                     <div style={{display:"flex",gap:3,alignItems:"center",flexShrink:0}}>
@@ -1016,8 +908,8 @@ function GanttView({tasks,col,ticks,LW,msEndPct,activeMilestone,MS_RANGES,C}){
                     </div>
                   </div>
                   <div style={{flex:1,position:"relative",height:"100%",minWidth:700}}>
-                    {task.blp_s && task.blp_e && <div style={{position:"absolute",left:`${pct(task.blp_s)}%`,width:`${barW(task.blp_s,task.blp_e)}%`,top:4,height:7,background:C.blp,borderRadius:2,opacity:1}}/>}
-                    {task.cc_s && task.cc_e && <div style={{position:"absolute",left:`${pct(task.cc_s)}%`,width:`${barW(task.cc_s,task.cc_e)}%`,top:15,height:7,background:col,borderRadius:2,opacity:inMs?1:0.75}}/>}
+                    {task.blp_s && task.blp_e && <div style={{position:"absolute",left:`${pct(task.blp_s)}%`,width:`${barW(task.blp_s,task.blp_e)}%`,top:4,height:7,background:C.blp,borderRadius:2,opacity:0.85}}/>}
+                    {task.cc_s && task.cc_e && <div style={{position:"absolute",left:`${pct(task.cc_s)}%`,width:`${barW(task.cc_s,task.cc_e)}%`,top:15,height:7,background:col,borderRadius:2,opacity:inMs?1:0.55}}/>}
                     {task.actual_s&&<div style={{position:"absolute",left:`${pct(task.actual_s)}%`,width:`${Math.max(0.3,barW(task.actual_s,task.actual_e||task.actual_s))}%`,top:10,height:5,background:"#22c55e",borderRadius:2,opacity:0.9}}/>}
                     <div style={{position:"absolute",left:`${TODAY_P}%`,top:0,bottom:0,width:1,background:C.amber+"55"}}/>
                     {msEndPct!==null&&<div style={{position:"absolute",left:`${msEndPct}%`,top:0,bottom:0,width:1,background:"#ef444477"}}/>}
@@ -1148,9 +1040,9 @@ function AnalysisView({rows,col,zoneDef,avgDev,syncIdx,P1P3_STRUCT,C}){
                       onMouseEnter={e=>e.currentTarget.style.background=C.tableHover}
                       onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.tableRow0:C.tableRow1}>
                       <td style={{padding:"5px 12px 5px 18px",color:C.text,fontWeight:600,fontSize:10,borderRight:`1px solid ${C.border}`,maxWidth:220,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{r.level&&<span style={{color:C.sub,fontSize:9,fontWeight:700,marginRight:5}}>[{r.level}]</span>}{r.task.replace(/^\[Z[\d.]+\]\s*/,"")}</td>
-                      <td style={{padding:"5px 12px",textAlign:"right",color:C.text,fontFamily:"monospace",fontSize:10}}>{r.volume>0?r.volume.toLocaleString():"—"}</td>
-                      <td style={{padding:"5px 12px",textAlign:"center",color:C.text,fontFamily:"monospace",fontSize:10}}>{r.blpDays?`${r.blpDays}d`:"—"}</td>
-                      <td style={{padding:"5px 12px",textAlign:"center",color:C.text,fontFamily:"monospace",fontSize:10,borderRight:`1px solid ${C.border}`}}>{blpR!=null?blpR.toFixed(2):"—"}</td>
+                      <td style={{padding:"5px 12px",textAlign:"right",color:C.sub,fontFamily:"monospace",fontSize:10}}>{r.volume>0?r.volume.toLocaleString():"—"}</td>
+                      <td style={{padding:"5px 12px",textAlign:"center",color:C.sub,fontFamily:"monospace",fontSize:10}}>{r.blpDays?`${r.blpDays}d`:"—"}</td>
+                      <td style={{padding:"5px 12px",textAlign:"center",color:C.sub,fontFamily:"monospace",fontSize:10,borderRight:`1px solid ${C.border}`}}>{blpR!=null?blpR.toFixed(2):"—"}</td>
                       <td style={{padding:"5px 12px",textAlign:"right",color:col,fontFamily:"monospace",fontSize:10,background:col+"0a",borderLeft:`1px solid ${C.border}`}}>{ccVol!=null?ccVol.toLocaleString():"—"}</td>
                       <td style={{padding:"5px 12px",textAlign:"center",color:col,fontFamily:"monospace",fontSize:10,background:col+"0a"}}>{r.ccDays?`${r.ccDays}d`:"—"}</td>
                       <td style={{padding:"5px 12px",textAlign:"center",color:col,fontFamily:"monospace",fontWeight:700,fontSize:10,background:col+"0a",borderRight:`1px solid ${C.border}`}}>{ccR!=null?ccR.toFixed(2):"—"}</td>
@@ -1161,7 +1053,7 @@ function AnalysisView({rows,col,zoneDef,avgDev,syncIdx,P1P3_STRUCT,C}){
                         {effDelta!==null ? <span style={{color:effCol}}>{effDelta>0?"↗":"↘"} {Math.abs(effDelta).toFixed(1)}%</span> : <span style={{color:C.muted}}>—</span>}
                       </td>
                       <td style={{padding:"5px 12px",textAlign:"center"}}>
-                        {flag==="adjust"   && <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#f8717122",color:"#ef4444",border:"1px solid #ef444455",whiteSpace:"nowrap"}}>⚠ Adjust Resources</span>}
+                        {flag==="adjust"   && <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#450a0a",color:"#f87171",border:"1px solid #f8717144",whiteSpace:"nowrap"}}>⚠ Adjust Resources</span>}
                         {flag==="ontrack"  && <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#22c55e22",color:"#22c55e",border:"1px solid #22c55e55",whiteSpace:"nowrap"}}>⚡ On Track</span>}
                         {flag==="baseline" && <span style={{display:"inline-flex",alignItems:"center",gap:4,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:700,background:C.panel,color:C.sub,border:`1px solid ${C.muted}`,whiteSpace:"nowrap"}}>— Baseline</span>}
                         {flag===null && <span style={{color:C.muted,fontSize:9}}>—</span>}
@@ -1169,9 +1061,9 @@ function AnalysisView({rows,col,zoneDef,avgDev,syncIdx,P1P3_STRUCT,C}){
                       <td style={{padding:"5px 12px",textAlign:"center"}}>
                         {(()=>{
                           if (durDelta===null||effDelta===null) return <span style={{color:C.muted,fontSize:9}}>—</span>;
-                          if (durDelta>0 && effDelta<0)  return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#f8717122",color:"#ef4444",border:"1px solid #ef444455",whiteSpace:"nowrap"}}>🔴 Slowdown</span>;
-                          if (durDelta>0 && effDelta>=0) return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#f59e0b22",color:"#d97706",border:"1px solid #f59e0b55",whiteSpace:"nowrap"}}>🟡 Scope+</span>;
-                          if (durDelta<=0 && effDelta>=0) return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#22c55e22",color:"#16a34a",border:"1px solid #22c55e55",whiteSpace:"nowrap"}}>🟢 Accelerated</span>;
+                          if (durDelta>0 && effDelta<0)  return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#450a0a",color:"#f87171",border:"1px solid #f8717133",whiteSpace:"nowrap"}}>🔴 Slowdown</span>;
+                          if (durDelta>0 && effDelta>=0) return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#1c1400",color:"#fbbf24",border:"1px solid #fbbf2433",whiteSpace:"nowrap"}}>🟡 Scope+</span>;
+                          if (durDelta<=0 && effDelta>=0) return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:800,background:"#052e16",color:"#4ade80",border:"1px solid #4ade8033",whiteSpace:"nowrap"}}>🟢 Accelerated</span>;
                           if (durDelta<0 && effDelta<0)  return <span style={{display:"inline-flex",alignItems:"center",gap:3,padding:"2px 8px",borderRadius:20,fontSize:9,fontWeight:700,background:C.panel,color:C.sub,border:"1px solid #33415533",whiteSpace:"nowrap"}}>⚪ Compressed</span>;
                           return <span style={{color:C.muted,fontSize:9}}>—</span>;
                         })()}
@@ -1246,12 +1138,12 @@ function HealthView({tasks,activeMilestone,setActiveMilestone,MS_RANGES,MILESTON
             <span style={{background:"#3b82f6",color:"#fff",fontSize:10,fontWeight:800,padding:"3px 10px",borderRadius:4,letterSpacing:1,textTransform:"uppercase"}}>CC Schedule Health</span>
             <span style={{color:C.sub,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>Quarterly Target Achievement</span>
           </div>
-          <div style={{fontSize:22,fontWeight:900,color:C.text}}>CC Schedule Milestone Achievement Board</div>
-          <div style={{color:C.sub,fontSize:12,marginTop:3}}>Evaluates alignment of current construction plan (CC) against quarterly milestone targets · All zones</div>
+          <div style={{fontSize:22,fontWeight:900,color:C.panel}}>CC Schedule Milestone Achievement Board</div>
+          <div style={{color:"#64748b",fontSize:12,marginTop:3}}>Evaluates alignment of current construction plan (CC) against quarterly milestone targets · All zones</div>
         </div>
         <div style={{border:`1.5px solid ${C.border}`,borderRadius:12,padding:"12px 18px",background:C.panel,textAlign:"right"}}>
           <div style={{color:C.sub,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>Project Deadline</div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16,color:"#3b82f6"}}>⏱</span><span style={{fontSize:20,fontWeight:900,color:C.text}}>2027-03-19</span></div>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16,color:"#3b82f6"}}>⏱</span><span style={{fontSize:20,fontWeight:900,color:C.panel}}>2027-03-19</span></div>
         </div>
       </div>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))",gap:12,marginBottom:24}}>
@@ -1260,7 +1152,7 @@ function HealthView({tasks,activeMilestone,setActiveMilestone,MS_RANGES,MILESTON
           return(
             <div key={ms} onClick={()=>pick(ms)} style={{background:C.panel,borderRadius:14,padding:"15px 16px",cursor:"pointer",border:isSel?`2px solid #3b82f6`:`1.5px solid ${C.border}`,boxShadow:isSel?"0 0 0 3px #3b82f622":"0 1px 3px rgba(0,0,0,0.08)"}}>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                <div style={{color:C.sub,fontSize:11,fontWeight:700}}>{ms}</div>
+                <div style={{color:"#64748b",fontSize:11,fontWeight:700}}>{ms}</div>
                 <div style={{color:C.sub,fontSize:10}}>{due.length} tasks</div>
               </div>
               <div style={{display:"flex",alignItems:"baseline",gap:5,marginBottom:2}}>
@@ -1280,11 +1172,11 @@ function HealthView({tasks,activeMilestone,setActiveMilestone,MS_RANGES,MILESTON
         <div style={{padding:"16px 28px",borderBottom:`1.5px solid ${C.border}`,display:"flex",alignItems:"center",gap:14}}>
           <div style={{width:40,height:40,borderRadius:12,background:"linear-gradient(135deg,#3b82f6,#6366f1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>🎯</div>
           <div>
-            <div style={{fontSize:17,fontWeight:900,color:C.text}}>{selMs} Milestone — Target Detail</div>
-            <div style={{color:C.sub,fontSize:11,marginTop:1}}>Deadline: {MS_RANGES[selMs][1]} · {detail.length} tasks in scope</div>
+            <div style={{fontSize:17,fontWeight:900,color:C.panel}}>{selMs} Milestone — Target Detail</div>
+            <div style={{color:"#64748b",fontSize:11,marginTop:1}}>Deadline: {MS_RANGES[selMs][1]} · {detail.length} tasks in scope</div>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 155px 145px 155px",gap:12,padding:"8px 28px",background:C.tableHead,borderBottom:`1px solid ${C.border}`}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 155px 145px 155px",gap:12,padding:"8px 28px",background:C.tableHead,borderBottom:"1px solid #f1f5f9"}}>
           {["Zone / Activity","CC Forecast (CC-E)","Days to Milestone","Status"].map(h=>(
             <div key={h} style={{color:C.sub,fontSize:10,fontWeight:800,textTransform:"uppercase",letterSpacing:0.5}}>{h}</div>
           ))}
@@ -1293,28 +1185,28 @@ function HealthView({tasks,activeMilestone,setActiveMilestone,MS_RANGES,MILESTON
           detail.map((t,i)=>{
             const end=MS_RANGES[selMs][1],d=diff(t.cc_e,end),late=d<0;
             return(
-              <div key={t.id} style={{display:"grid",gridTemplateColumns:"1fr 155px 145px 155px",gap:12,padding:"13px 28px",borderBottom:i<detail.length-1?`1px solid ${C.border}`:"none",background:i%2===0?C.tableRow0:C.tableRow1}}
+              <div key={t.id} style={{display:"grid",gridTemplateColumns:"1fr 155px 145px 155px",gap:12,padding:"13px 28px",borderBottom:i<detail.length-1?"1px solid #f1f5f9":"none",background:i%2===0?C.tableRow0:C.tableRow1}}
                 onMouseEnter={e=>e.currentTarget.style.background=C.tableHover}
                 onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.tableRow0:C.tableRow1}>
                 <div>
                   <div style={{fontSize:10,fontWeight:800,color:"#3b82f6",textTransform:"uppercase",letterSpacing:0.5,marginBottom:3}}>{t.zone.replace("Zone ","")} · {t.level}</div>
-                  <div style={{fontSize:13,fontWeight:800,color:C.text}}>{t.activity}</div>
+                  <div style={{fontSize:13,fontWeight:800,color:C.panel}}>{t.activity}</div>
                 </div>
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"center"}}>
-                  <div style={{fontSize:14,fontWeight:800,color:C.text}}>{t.cc_e}</div>
+                  <div style={{fontSize:14,fontWeight:800,color:C.panel}}>{t.cc_e}</div>
                   <div style={{fontSize:9,color:C.sub,fontWeight:700,textTransform:"uppercase",marginTop:2}}>Current Forecast</div>
                 </div>
                 <div style={{display:"flex",flexDirection:"column",justifyContent:"center"}}>
-                  <div style={{display:"inline-flex",alignItems:"center",background:late?"#ef444422":d===0?"#f59e0b22":"#22c55e22",border:`1px solid ${late?"#ef444455":d===0?"#f59e0b55":"#22c55e55"}`,borderRadius:10,padding:"5px 11px",width:"fit-content"}}>
-                    <span style={{fontSize:16,fontWeight:900,color:late?"#ef4444":d===0?"#d97706":"#16a34a",lineHeight:1}}>{d>0?`-${d}`:d===0?"0":`+${Math.abs(d)}`}</span>
-                    <span style={{fontSize:11,fontWeight:700,color:late?"#ef4444":"#16a34a",marginLeft:3}}>days</span>
+                  <div style={{display:"inline-flex",alignItems:"center",background:late?"#fef2f2":d===0?"#fefce8":"#ecfdf5",border:`1px solid ${late?"#fca5a5":d===0?"#fde047":"#6ee7b7"}`,borderRadius:10,padding:"5px 11px",width:"fit-content"}}>
+                    <span style={{fontSize:16,fontWeight:900,color:late?"#ef4444":d===0?"#ca8a04":"#10b981",lineHeight:1}}>{d>0?`-${d}`:d===0?"0":`+${Math.abs(d)}`}</span>
+                    <span style={{fontSize:11,fontWeight:700,color:late?"#ef4444":"#10b981",marginLeft:3}}>days</span>
                   </div>
                   <div style={{fontSize:9,color:late?"#ef4444":"#10b981",fontWeight:700,marginTop:3}}>{late?"⚠ Exceeds milestone":d===0?"On milestone":"✓ Ahead"}</div>
                 </div>
                 <div style={{display:"flex",alignItems:"center"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:99,background:late?"#ef444422":"#22c55e22",border:`1px solid ${late?"#ef444466":"#22c55e66"}`}}>
-                    <span style={{fontSize:12,color:late?"#ef4444":"#16a34a"}}>{late?"⚠":"✓"}</span>
-                    <span style={{fontSize:11,fontWeight:800,color:late?"#ef4444":"#16a34a",whiteSpace:"nowrap"}}>{late?"Delayed":"On Time / Early"}</span>
+                  <div style={{display:"flex",alignItems:"center",gap:5,padding:"5px 12px",borderRadius:99,background:late?"#fef2f2":"#ecfdf5",border:`1px solid ${late?"#fca5a5":"#6ee7b7"}`}}>
+                    <span style={{fontSize:12,color:late?"#ef4444":"#10b981"}}>{late?"⚠":"✓"}</span>
+                    <span style={{fontSize:11,fontWeight:800,color:late?"#ef4444":"#10b981",whiteSpace:"nowrap"}}>{late?"Delayed":"On Time / Early"}</span>
                   </div>
                 </div>
               </div>
@@ -1322,7 +1214,7 @@ function HealthView({tasks,activeMilestone,setActiveMilestone,MS_RANGES,MILESTON
           })
         )}
         <div style={{padding:"12px 28px",background:C.tableHead,borderTop:`1.5px solid ${C.border}`,display:"flex",gap:22,flexWrap:"wrap"}}>
-          {[["Total",detail.length,C.text],["On Time / Early",detail.filter(t=>diff(t.cc_e,MS_RANGES[selMs][1])>=0).length,"#10b981"],["Delayed",detail.filter(t=>diff(t.cc_e,MS_RANGES[selMs][1])<0).length,"#ef4444"],["Achievement",msData(selMs).rate+"%","#3b82f6"]].map(([l,v,c])=>(
+          {[["Total",detail.length,C.panel],["On Time / Early",detail.filter(t=>diff(t.cc_e,MS_RANGES[selMs][1])>=0).length,"#10b981"],["Delayed",detail.filter(t=>diff(t.cc_e,MS_RANGES[selMs][1])<0).length,"#ef4444"],["Achievement",msData(selMs).rate+"%","#3b82f6"]].map(([l,v,c])=>(
             <div key={l} style={{display:"flex",gap:7,alignItems:"center"}}>
               <span style={{color:C.sub,fontSize:11,fontWeight:700}}>{l}:</span>
               <span style={{color:c,fontSize:14,fontWeight:900}}>{v}</span>
@@ -1510,7 +1402,7 @@ function HedgingView({ tasks, activeArea, activeZoneKey, areaAllTaskZones, zoneD
     const pct   = total > 0 ? ((done / total) * 100).toFixed(1) : '0.0';
     const rem   = total - done;
     return (
-      <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:12, padding:'16px 20px', flex:1, minWidth:180 }}>
+      <div style={{ background:C.panel, border:`1px solid #1e293b`, borderRadius:12, padding:'16px 20px', flex:1, minWidth:180 }}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
           <span style={{ fontSize:10, color:C.sub, fontWeight:700, textTransform:'uppercase' }}>{label} ({unit})</span>
           <span style={{ fontSize:10, background:color+'22', color:color, padding:'2px 8px', borderRadius:20, fontWeight:700 }}>{pct}% confirmed</span>
@@ -1673,16 +1565,16 @@ function HedgingView({ tasks, activeArea, activeZoneKey, areaAllTaskZones, zoneD
                 const remQty   = t.q - doneQty;
                 const donePct  = isDone ? 100 : 0;
                 const typeCol  = TYPE_COLORS[t.type] || '#94a3b8';
-                const rowBg    = i % 2 === 0 ? C.tableRow0 : C.tableRow1;
+                const rowBg    = wasDonePrev ? '#052e1611' : isDone ? '#052e1622' : isCarry ? '#1c140011' : 'transparent';
                 return (
                   <tr key={i} style={{ background:rowBg, borderBottom:`1px solid ${C.border}` }}
                     onMouseEnter={e=>e.currentTarget.style.background=C.tableHover}
-                    onMouseLeave={e=>e.currentTarget.style.background=rowBg}>
-                    <td style={{ padding:'6px 12px', textAlign:'center', color:C.text, fontWeight:700, fontSize:10 }}>{t.l}</td>
-                    <td style={{ padding:'6px 12px', textAlign:'center', color:C.text, fontSize:10 }}>{t.z}</td>
-                    <td style={{ padding:'6px 12px', verticalAlign:'middle' }}>
+                    onMouseLeave={e=>e.currentTarget.style.background=i%2===0?C.tableRow0:C.tableRow1}>
+                    <td style={{ padding:'6px 12px', textAlign:'center', color:C.sub, fontWeight:700, fontSize:10 }}>{t.l}</td>
+                    <td style={{ padding:'6px 12px', textAlign:'center', color:C.sub, fontSize:10 }}>{t.z}</td>
+                    <td style={{ padding:'6px 12px' }}>
                       <span style={{ background:typeCol+'22', color:typeCol, padding:'2px 8px', borderRadius:20, fontSize:9, fontWeight:700, marginRight:6 }}>{TYPE_LABELS[t.type]}</span>
-                      <span style={{ color:C.text, fontSize:10 }}>{t.s}</span>
+                      <span style={{ color:C.sub, fontSize:10 }}>{t.s}</span>
                     </td>
                     <td style={{ padding:'6px 12px', textAlign:'right', color:C.text, fontWeight:800, fontFamily:'monospace', fontSize:10 }}>{t.q.toLocaleString()}</td>
                     <td style={{ padding:'6px 12px', textAlign:'center', color:C.sub, fontStyle:'italic', fontSize:10 }}>{t.bl}</td>
@@ -1691,12 +1583,12 @@ function HedgingView({ tasks, activeArea, activeZoneKey, areaAllTaskZones, zoneD
                     <td style={{ padding:'6px 12px', textAlign:'right', color:'#22c55e', fontWeight:800, fontSize:10 }}>{doneQty.toLocaleString()}</td>
                     <td style={{ padding:'6px 12px', textAlign:'right', color:'#f59e0b', fontSize:10 }}>{remQty.toLocaleString()}</td>
                     <td style={{ padding:'6px 12px', textAlign:'center' }}>
-                      <span style={{ color:donePct===100?'#22c55e':C.sub, fontWeight:700, fontSize:10 }}>{donePct}%</span>
+                      <span style={{ color:donePct===100?'#22c55e':'#475569', fontWeight:700, fontSize:10 }}>{donePct}%</span>
                     </td>
                     <td style={{ padding:'6px 12px', textAlign:'center' }}>
-                      {wasDonePrev && <span style={{ fontSize:8, background:'#22c55e22', color:'#16a34a', padding:'2px 6px', borderRadius:10, fontWeight:700, border:'1px solid #22c55e44' }}>✓ Prior</span>}
-                      {isDone && !wasDonePrev && <span style={{ fontSize:8, background:'#22c55e22', color:'#16a34a', padding:'2px 6px', borderRadius:10, fontWeight:700, border:'1px solid #22c55e44' }}>✓ Done</span>}
-                      {isCarry && <span style={{ fontSize:8, background:'#f59e0b22', color:'#d97706', padding:'2px 6px', borderRadius:10, fontWeight:700, border:'1px solid #f59e0b44' }}>↗ Carry</span>}
+                      {wasDonePrev && <span style={{ fontSize:8, background:'#052e16', color:'#22c55e', padding:'2px 6px', borderRadius:10, fontWeight:700 }}>✓ Prior</span>}
+                      {isDone && !wasDonePrev && <span style={{ fontSize:8, background:'#052e16', color:'#4ade80', padding:'2px 6px', borderRadius:10, fontWeight:700 }}>✓ Done</span>}
+                      {isCarry && <span style={{ fontSize:8, background:'#1c1400', color:'#f59e0b', padding:'2px 6px', borderRadius:10, fontWeight:700 }}>↗ Carry</span>}
                     </td>
                   </tr>
                 );

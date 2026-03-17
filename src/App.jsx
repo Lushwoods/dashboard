@@ -132,6 +132,133 @@ function WeatherWidget({ C }) {
   );
 }
 
+// ─── ZONE KEY PLAN SVG SCHEMATIC ─────────────────────────────────────────────
+// Polygon shapes derived from PPT reference: "20260303 Podium Catch-up vs baseline.pptx"
+// Slide 25 – Zone P2 Podium Superstructure Overall Zoning Strategy (key plan diagram)
+// SVG viewBox "0 0 280 200" maps slide region x=4.8–13.0" → 0–280, y=1.0–7.2" → 0–200
+function ZoneKeyPlan({ activeZoneKey, activeArea, setActiveZoneKey, setActiveArea, C }) {
+  const [hovered, setHovered] = useState(null);
+
+  // Each entry maps to a clickable zone region on the SVG schematic.
+  // Points come from the freeform polygon paths on the PPT key plan slide.
+  const ZONE_SHAPES = [
+    {
+      id: "P2",
+      label: "P2",
+      sublabel: "New Basement",
+      areaKey: "NEW_BASEMENT",
+      selectKey: "P2_ALL",
+      color: "#8b5cf6",
+      // Freeform 54 – overall Zone P2 / New Basement podium footprint
+      points: "46,36 172,93 141,154 14,95",
+      labelXY: [39, 100],
+    },
+    {
+      id: "P1",
+      label: "P1",
+      sublabel: "Marine",
+      areaKey: "MARINE",
+      selectKey: "P1",
+      color: "#f59e0b",
+      // Left portion of Freeform 56 (P1+P3 split at slide x≈9.25")
+      points: "86,55 152,37 152,93",
+      labelXY: [108, 61],
+    },
+    {
+      id: "P3",
+      label: "P3",
+      sublabel: "Marine",
+      areaKey: "MARINE",
+      selectKey: "P3",
+      color: "#fb923c",
+      // Right portion of Freeform 56
+      points: "152,93 179,108 230,105 252,68 249,20 209,22 152,37",
+      labelXY: [205, 60],
+    },
+    {
+      id: "P4",
+      label: "P4",
+      sublabel: "Exist. Basement",
+      areaKey: "EXIST_BASEMENT",
+      selectKey: "P4_ALL",
+      color: "#f59e0b",
+      // Freeform 57 – existing basement podium footprint
+      points: "39,107 128,148 129,162 125,169 82,187 31,146 31,118",
+      labelXY: [57, 150],
+    },
+  ];
+
+  function handleClick(shape) {
+    if (shape.areaKey !== activeArea) setActiveArea(shape.areaKey);
+    setActiveZoneKey(shape.selectKey);
+    // Reset level filter implicitly handled by setActiveZoneKey + area change
+  }
+
+  function isActive(shape) {
+    if (!activeZoneKey) return false;
+    if (shape.id === "P2") return activeZoneKey.startsWith("P2_");
+    if (shape.id === "P4") return activeZoneKey.startsWith("P4_");
+    return activeZoneKey === shape.selectKey;
+  }
+
+  return (
+    <div style={{ flexShrink: 0, borderLeft: `1px solid ${C.border}`, paddingLeft: 12, marginLeft: 4 }}>
+      <div style={{ fontSize: 8, fontWeight: 700, color: C.sub, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 3 }}>
+        Key Plan · Podium Zones
+      </div>
+      <svg viewBox="0 0 280 200" width={196} height={140} style={{ display: "block", overflow: "visible" }}>
+        {/* Area boundary guide labels */}
+        <text x="225" y="11" fontSize="6.5" fill={C.sub} fontWeight="600" textAnchor="middle" opacity="0.7">Marine Zone</text>
+        <text x="225" y="18" fontSize="6.5" fill={C.sub} fontWeight="600" textAnchor="middle" opacity="0.7">Podium</text>
+        <text x="23" y="76" fontSize="6" fill={C.sub} fontWeight="600" textAnchor="middle" transform="rotate(-30,23,76)" opacity="0.6">New Bmt</text>
+        <text x="14" y="152" fontSize="6" fill={C.sub} fontWeight="600" textAnchor="middle" opacity="0.6">Exist.</text>
+        <text x="14" y="160" fontSize="6" fill={C.sub} fontWeight="600" textAnchor="middle" opacity="0.6">Bmt</text>
+
+        {/* Zone polygons — draw P2 first (back), then P4, then P1/P3 on top */}
+        {[ZONE_SHAPES[0], ZONE_SHAPES[3], ZONE_SHAPES[1], ZONE_SHAPES[2]].map(shape => {
+          const active   = isActive(shape);
+          const areaLit  = activeArea === shape.areaKey;
+          const hov      = hovered === shape.id;
+          const fillOp   = active ? 0.55 : hov ? 0.32 : areaLit ? 0.22 : 0.12;
+          const strokeW  = active ? 2.5 : hov ? 1.8 : 0.8;
+          const strokeOp = active ? 1 : hov ? 0.9 : areaLit ? 0.7 : 0.4;
+          return (
+            <g key={shape.id}>
+              <polygon
+                points={shape.points}
+                fill={shape.color}
+                fillOpacity={fillOp}
+                stroke={shape.color}
+                strokeWidth={strokeW}
+                strokeOpacity={strokeOp}
+                style={{ cursor: "pointer", transition: "fill-opacity 0.15s, stroke-width 0.15s" }}
+                onClick={() => handleClick(shape)}
+                onMouseEnter={() => setHovered(shape.id)}
+                onMouseLeave={() => setHovered(null)}
+              />
+              <text
+                x={shape.labelXY[0]}
+                y={shape.labelXY[1]}
+                fontSize={active ? 10 : 9}
+                fontWeight={active ? "800" : "600"}
+                fill={active ? shape.color : hov ? shape.color : C.sub}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                style={{ pointerEvents: "none", userSelect: "none", transition: "fill 0.15s" }}
+              >
+                {shape.label}
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Compass / north indicator */}
+        <text x="270" y="190" fontSize="7" fill={C.sub} opacity="0.4" textAnchor="middle">N↑</text>
+      </svg>
+    </div>
+  );
+}
+
 // ─── ZONE HIERARCHY ───────────────────────────────────────────────────────────
 // 3 main areas matching drawings:
 //   BASEMENT→L1: Marine Deck (C) | New Basement (A) | Existing Basement (B)
@@ -941,7 +1068,8 @@ export default function App() {
           <div style={{flex:1}}/>
         </div>
 
-        {tab!=="analysis" && <div style={{paddingTop:7,paddingBottom:7,borderBottom:`1px solid ${C.border}`}}>
+        {tab!=="analysis" && <div style={{paddingTop:7,paddingBottom:7,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"flex-start",gap:0}}>
+          <div style={{flex:1,minWidth:0}}>
           {area.subgroups.map(sg=>(
             <div key={sg.key} style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap",marginBottom:4}}>
               <span style={{color:sg.color,fontSize:9,fontWeight:800,textTransform:"uppercase",letterSpacing:1,background:sg.color+"22",padding:"2px 8px",borderRadius:4,minWidth:100,textAlign:"center"}}>{sg.label}</span>
@@ -958,6 +1086,14 @@ export default function App() {
               )}
             </div>
           ))}
+          </div>
+          <ZoneKeyPlan
+            activeZoneKey={activeZoneKey}
+            activeArea={activeArea}
+            setActiveZoneKey={(key)=>{setActiveZoneKey(key);setFilterLevel("all");}}
+            setActiveArea={(areaKey)=>{setActiveArea(areaKey);setActiveZoneKey(null);setFilterLevel("all");}}
+            C={C}
+          />
         </div>}
 
         <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap",paddingTop:7,paddingBottom:10}}>

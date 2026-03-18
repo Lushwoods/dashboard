@@ -1045,7 +1045,7 @@ export default function App() {
           }}>
             {lightMode ? "🌙 Dark Mode" : "☀️ Light Mode"}
           </button>
-          {(tab==="gantt" || tab==="health") && tab!=="trucks" && <>
+          {(tab==="gantt" || tab==="health") && <>
           <span style={{color:C.sub,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginRight:2}}>Milestone:</span>
           {MILESTONES.map(m=>(
             <button key={m} onClick={()=>setActiveMilestone(m)} style={{padding:"4px 9px",borderRadius:5,border:"none",cursor:"pointer",fontSize:11,fontFamily:"inherit",fontWeight:800,background:activeMilestone===m?"#ef4444":C.tabInactive,color:activeMilestone===m?"#fff":C.tabInactiveText}}>{m}</button>
@@ -1053,7 +1053,7 @@ export default function App() {
         </div>
 
         <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",paddingBottom:8,borderBottom:`1px solid ${C.border}`}}>
-          {tab !== "trucks" && <><span style={{color:C.sub,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:0.8,marginRight:4}}>Area:</span>
+          <span style={{color:C.sub,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:0.8,marginRight:4}}>Area:</span>
           {AREA_GROUPS.map(ag=>(
             <button key={ag.key} onClick={()=>{setActiveArea(ag.key);setActiveZoneKey(null);setFilterLevel("all");}} style={{
               padding:"6px 16px",borderRadius:8,border:`1.5px solid ${activeArea===ag.key?ag.color:C.muted}`,
@@ -1065,11 +1065,10 @@ export default function App() {
               </span>
             </button>
           ))}
-          <div style={{flex:1}}/></>}
-          {tab === "trucks" && <div style={{flex:1,display:'flex',alignItems:'center',gap:8}}><span style={{fontSize:16}}>🚛</span><span style={{color:C.sub,fontSize:11,fontWeight:700}}>Excavation Analytics — no zone filter applied</span></div>}
+          <div style={{flex:1}}/>
         </div>
 
-        {tab!=="analysis" && tab!=="trucks" && <div style={{paddingTop:7,paddingBottom:7,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"flex-start",gap:0}}>
+        {tab!=="analysis" && <div style={{paddingTop:7,paddingBottom:7,borderBottom:`1px solid ${C.border}`,display:"flex",alignItems:"flex-start",gap:0}}>
           <div style={{flex:1,minWidth:0}}>
           {area.subgroups.map(sg=>(
             <div key={sg.key} style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap",marginBottom:4}}>
@@ -1098,7 +1097,7 @@ export default function App() {
         </div>}
 
         <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap",paddingTop:7,paddingBottom:10}}>
-          {!zoneDef?.levelFilter && tab!=="analysis" && tab!=="trucks" && (() => {
+          {!zoneDef?.levelFilter && tab!=="analysis" && (() => {
             const activeAG = AREA_GROUPS.find(a => a.key === activeArea);
             const activeSG = activeAG?.subgroups.find(sg => sg.zones.some(z => z.key === activeZoneKey));
             const activeSGKey = activeSG?.key;
@@ -1136,7 +1135,7 @@ export default function App() {
           })()}
           <div style={{flex:1}}/>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",alignItems:"center"}}>
-            {[["gantt","📊 Gantt",false],["analysis","📈 Productivity",false],["cards","🃏 Prod Cards",false],["resources","📋 Resources",true],["scurve","📉 S-Curve",true],["settlement","🏦 Settlement",true],["health","🏥 Schedule Health",true],["hedging","⚖️ Hedging",true],["trucks","🚛 Excavation",false]].map(([v,l,playground])=>(
+            {[["gantt","📊 Gantt",false],["analysis","📈 Productivity",false],["cards","🃏 Prod Cards",false],["resources","📋 Resources",true],["scurve","📉 S-Curve",true],["settlement","🏦 Settlement",true],["health","🏥 Schedule Health",true],["hedging","⚖️ Hedging",true]].map(([v,l,playground])=>(
               <div key={v} style={{position:'relative',display:'inline-flex',flexDirection:'column',alignItems:'center',gap:1}}>
                 <button onClick={()=>setTab(v)} title={playground?"⚠️ Playground only — do not extract data from this page":undefined} style={{
                   padding:"5px 13px",borderRadius:4,border:playground?`1px dashed ${C.muted}`:"none",
@@ -1182,7 +1181,7 @@ export default function App() {
       </div>
       </>}
 
-      {tasks.length === 0 && tab !== "trucks" && (
+      {tasks.length === 0 && (
         <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:400,gap:20,color:C.sub}}>
           <div style={{fontSize:48}}>📂</div>
           <div style={{fontSize:18,fontWeight:700,color:C.text}}>No Data Loaded</div>
@@ -1212,7 +1211,6 @@ export default function App() {
       {tasks.length > 0 && tab==="settlement" && <SettlementView tasks={ganttTasks} col={col} areaAllTaskZones={areaAllTaskZones} zoneDef={zoneDef} filterLevel={filterLevel} C={C}/>}
       {tasks.length > 0 && tab==="health"   && <HealthView   tasks={tasks}      activeMilestone={activeMilestone} setActiveMilestone={setActiveMilestone} MS_RANGES={MS_RANGES} MILESTONES={MILESTONES} C={C} lightMode={lightMode}/>}
       {tasks.length > 0 && tab==="hedging"  && <HedgingView  tasks={tasks}      activeArea={activeArea} activeZoneKey={activeZoneKey} areaAllTaskZones={areaAllTaskZones} zoneDef={zoneDef} C={C} lightMode={lightMode}/>}
-      {tab==="trucks" && <TipperTruckView C={C} lightMode={lightMode}/>}
     </div>
   );
 }
@@ -3031,476 +3029,6 @@ function SCurveView({ tasks, col, areaAllTaskZones, zoneDef, C }) {
           })}
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── TIPPER TRUCK VIEW ────────────────────────────────────────────────────────
-function TipperTruckView({ C, lightMode }) {
-  const [ttFiles,       setTtFiles]       = useState([]);
-  const [ttRows,        setTtRows]        = useState([]);
-  const [volM3,         setVolM3]         = useState(11);
-  const [activeDay,     setActiveDay]     = useState('all');
-  const [sortedDays,    setSortedDays]    = useState([]);
-  const [dayTrips,      setDayTrips]      = useState({});
-  const [dayHourly,     setDayHourly]     = useState({});
-  const [allHourly,     setAllHourly]     = useState({});
-  const [parsing,       setParsing]       = useState(false);
-  const [parseMsg,      setParseMsg]      = useState('');
-  const [parsePct,      setParsePct]      = useState(0);
-  const [screen,        setScreen]        = useState('upload'); // 'upload' | 'dashboard'
-  const [volDash,       setVolDash]       = useState(11);
-
-  const chartDailyRef   = useRef(null);
-  const chartHourlyRef  = useRef(null);
-  const chartVolRef     = useRef(null);
-  const chartVehicleRef = useRef(null);
-  const chartDailyInst  = useRef(null);
-  const chartHourlyInst = useRef(null);
-  const chartVolInst    = useRef(null);
-  const chartVehicleInst= useRef(null);
-  const fileInputRef2   = useRef(null);
-
-  // Load Chart.js once
-  const [chartJsReady, setChartJsReady] = useState(!!window.Chart);
-  useEffect(() => {
-    if (window.Chart) { setChartJsReady(true); return; }
-    const s = document.createElement('script');
-    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js';
-    s.onload = () => setChartJsReady(true);
-    document.head.appendChild(s);
-  }, []);
-
-  // Chart colour helpers that respect light/dark
-  const gridCol  = lightMode ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,255,0.05)';
-  const tickCol  = lightMode ? '#64748b' : '#6b7280';
-
-  // ── helpers ──
-  function getField(row, ...keys) {
-    for (const k of keys) { if (row[k] !== undefined && row[k] !== '') return row[k]; }
-    return '';
-  }
-  function getDate(row) {
-    const v = getField(row, 'Access Time(IN)', 'accessTimeIn', 'inTime', 'date', 'Date');
-    if (!v) return null;
-    const m = String(v).match(/(\d{4}-\d{2}-\d{2})/);
-    return m ? m[1] : null;
-  }
-  function getHour(row) {
-    const v = getField(row, 'Access Time(IN)', 'accessTimeIn', 'inTime');
-    if (!v) return null;
-    const m = String(v).match(/(\d{2}):\d{2}/);
-    return m ? parseInt(m[1]) : null;
-  }
-  function getVehicle(row) {
-    return getField(row, 'Vehicle NO.', 'vehicleNo', 'vehicle_no', 'Vehicle No', 'plateNo') || '—';
-  }
-
-  // ── file handling ──
-  function addFiles(newFiles) {
-    setTtFiles(prev => {
-      const next = [...prev];
-      newFiles.forEach(f => { if (!next.find(x => x.name === f.name)) next.push(f); });
-      return next;
-    });
-  }
-  function removeFile(i) {
-    setTtFiles(prev => prev.filter((_, idx) => idx !== i));
-  }
-
-  async function parseXLSX(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = e => {
-        try {
-          const wb = window.XLSX.read(e.target.result, { type: 'array', cellDates: true });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const rows = window.XLSX.utils.sheet_to_json(ws, { defval: '' });
-          resolve(rows);
-        } catch(err) { reject(err); }
-      };
-      reader.onerror = reject;
-      reader.readAsArrayBuffer(file);
-    });
-  }
-
-  async function handleParse() {
-    if (!ttFiles.length || !window.XLSX) return;
-    setParsing(true); setParsePct(0);
-    let allR = [];
-    for (let i = 0; i < ttFiles.length; i++) {
-      setParsePct(Math.round((i / ttFiles.length) * 100));
-      setParseMsg(`Parsing ${i+1}/${ttFiles.length}: ${ttFiles[i].name}`);
-      try { const rows = await parseXLSX(ttFiles[i]); allR = allR.concat(rows); } catch(e) {}
-    }
-    setParsePct(100);
-    setParseMsg(`✓ ${allR.length.toLocaleString()} records loaded`);
-    setTtRows(allR);
-    setVolM3(parseFloat(document.getElementById('tt-vol-input')?.value) || 11);
-    setVolDash(parseFloat(document.getElementById('tt-vol-input')?.value) || 11);
-
-    // Build day/hourly maps
-    const daySet = new Set(allR.map(r => getDate(r)).filter(Boolean));
-    const days = [...daySet].sort();
-    const dTrips = {}, dHourly = {};
-    days.forEach((d, i) => {
-      const rows = allR.filter(r => getDate(r) === d);
-      dTrips[i] = rows.length;
-      const h = {};
-      rows.forEach(r => { const hr = getHour(r); if (hr !== null) h[hr] = (h[hr]||0)+1; });
-      dHourly[i] = h;
-    });
-    const aH = {};
-    allR.forEach(r => { const hr = getHour(r); if (hr !== null) aH[hr] = (aH[hr]||0)+1; });
-
-    setSortedDays(days);
-    setDayTrips(dTrips);
-    setDayHourly(dHourly);
-    setAllHourly(aH);
-    setActiveDay('all');
-    setParsing(false);
-    setTimeout(() => setScreen('dashboard'), 300);
-  }
-
-  // ── chart builders ──
-  useEffect(() => {
-    if (screen !== 'dashboard' || !chartJsReady || !sortedDays.length) return;
-    buildDailyChart();
-    buildHourlyChart('all');
-    buildVolChart(volDash);
-    buildVehicleChart();
-  }, [screen, chartJsReady, sortedDays, lightMode]);
-
-  useEffect(() => {
-    if (screen !== 'dashboard' || !chartJsReady) return;
-    buildHourlyChart(activeDay);
-  }, [activeDay, lightMode]);
-
-  useEffect(() => {
-    if (screen !== 'dashboard' || !chartJsReady || !sortedDays.length) return;
-    buildVolChart(volDash);
-  }, [volDash, lightMode, sortedDays]);
-
-  function buildDailyChart() {
-    if (chartDailyInst.current) chartDailyInst.current.destroy();
-    if (!chartDailyRef.current) return;
-    const data = sortedDays.map((_,i) => dayTrips[i]);
-    const max = Math.max(...data);
-    chartDailyInst.current = new window.Chart(chartDailyRef.current, {
-      type: 'bar',
-      data: { labels: sortedDays.map(d => d.slice(5)), datasets: [{ data, backgroundColor: data.map(v => v===max ? '#f59e0b' : 'rgba(245,158,11,0.35)'), borderRadius: 4, borderSkipped: false }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw+' trips' } } },
-        scales: {
-          x: { grid: { display: false }, ticks: { color: tickCol, font: { size: 10 }, maxRotation: 45, autoSkip: sortedDays.length > 20 } },
-          y: { grid: { color: gridCol }, ticks: { color: tickCol, font: { size: 10 } }, beginAtZero: true }
-        }
-      }
-    });
-  }
-
-  function buildHourlyChart(dayIdx) {
-    if (chartHourlyInst.current) chartHourlyInst.current.destroy();
-    if (!chartHourlyRef.current) return;
-    const h = dayIdx === 'all' ? allHourly : (dayHourly[dayIdx] || {});
-    const hours = Array.from({length:20}, (_,i)=>i+4);
-    const labels = hours.map(hr => hr<12?hr+'am':hr===12?'12pm':(hr-12)+'pm');
-    const data = hours.map(hr => h[hr]||0);
-    const max = Math.max(...data);
-    chartHourlyInst.current = new window.Chart(chartHourlyRef.current, {
-      type: 'bar',
-      data: { labels, datasets: [{ data, backgroundColor: data.map(v => v===max?'#3b82f6':'rgba(59,130,246,0.3)'), borderRadius: 3, borderSkipped: false }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw+' trips' } } },
-        scales: {
-          x: { grid: { display: false }, ticks: { color: tickCol, font: { size: 10 }, maxRotation: 45 } },
-          y: { grid: { color: gridCol }, ticks: { color: tickCol, font: { size: 10 } }, beginAtZero: true }
-        }
-      }
-    });
-  }
-
-  function buildVolChart(vol) {
-    const v = vol ?? volDash;
-    if (chartVolInst.current) chartVolInst.current.destroy();
-    if (!chartVolRef.current) return;
-    const data = sortedDays.map((_,i) => Math.round(dayTrips[i] * v));
-    chartVolInst.current = new window.Chart(chartVolRef.current, {
-      type: 'bar',
-      data: { labels: sortedDays.map(d => d.slice(5)), datasets: [{ data, backgroundColor: 'rgba(16,185,129,0.4)', borderColor: '#10b981', borderWidth: 1, borderRadius: 4, borderSkipped: false }] },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => Math.round(c.raw).toLocaleString()+' m³' } } },
-        scales: {
-          x: { grid: { display: false }, ticks: { color: tickCol, font: { size: 10 }, maxRotation: 45, autoSkip: sortedDays.length > 20 } },
-          y: { grid: { color: gridCol }, ticks: { color: tickCol, font: { size: 10 }, callback: n => n.toLocaleString() }, beginAtZero: true }
-        }
-      }
-    });
-  }
-
-  function buildVehicleChart() {
-    if (chartVehicleInst.current) chartVehicleInst.current.destroy();
-    if (!chartVehicleRef.current) return;
-    const freq = {};
-    ttRows.forEach(r => { const v = getVehicle(r); freq[v] = (freq[v]||0)+1; });
-    const sorted = Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,20);
-    chartVehicleInst.current = new window.Chart(chartVehicleRef.current, {
-      type: 'bar',
-      data: {
-        labels: sorted.map(([v]) => v),
-        datasets: [{ data: sorted.map(([,c])=>c), backgroundColor: 'rgba(245,158,11,0.5)', borderColor: '#f59e0b', borderWidth: 1, borderRadius: 3, borderSkipped: false }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => c.raw+' trips' } } },
-        scales: {
-          x: { grid: { color: gridCol }, ticks: { color: tickCol, font: { size: 10 } }, beginAtZero: true },
-          y: { grid: { display: false }, ticks: { color: lightMode ? '#475569' : '#9ca3af', font: { size: 10, family: "'Poppins', sans-serif" } } }
-        }
-      }
-    });
-  }
-
-  // ── derived KPIs ──
-  const total    = ttRows.length;
-  const days     = sortedDays.length;
-  const avg      = days > 0 ? Math.round(total/days) : 0;
-  const peakIdx  = sortedDays.reduce((best, _, i) => (dayTrips[i]||0) > (dayTrips[best]||0) ? i : best, 0);
-  const peakTrips= dayTrips[peakIdx] || 0;
-  const totalVol = Math.round(total * volDash);
-
-  // ── Timeline builder ──
-  function renderTimeline(dayIdx) {
-    const h = dayIdx === 'all' ? allHourly : (dayHourly[dayIdx] || {});
-    const maxV = Math.max(...Object.values(h), 1);
-    const hours = Array.from({length:20}, (_,i)=>i+4);
-    return hours.map(hr => {
-      const v = h[hr]||0;
-      const pct = v/maxV*100;
-      const color = v >= maxV*0.75 ? '#f59e0b' : v >= maxV*0.4 ? '#3b82f6' : '#1d4ed8';
-      const label = hr<12?`${hr}:00 am`:hr===12?'12:00 pm':`${hr-12}:00 pm`;
-      return (
-        <div key={hr} style={{ display:'grid', gridTemplateColumns:'64px 1fr', alignItems:'center', marginBottom:3 }}>
-          <span style={{ fontSize:10, color:C.sub, textAlign:'right', paddingRight:10, fontFamily:'monospace' }}>{label}</span>
-          <div style={{ background:C.inputBg, borderRadius:3, height:22, position:'relative', overflow:'hidden' }}>
-            {v > 0 && (
-              <div style={{ width:`${Math.max(pct,1)}%`, height:'100%', borderRadius:3, background:color, display:'flex', alignItems:'center', paddingLeft:8, transition:'width 0.4s' }}>
-                {v > 2 && <span style={{ fontSize:10, fontWeight:700, color:'#000', fontFamily:'monospace', whiteSpace:'nowrap' }}>{v}</span>}
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    });
-  }
-
-  // ── UPLOAD SCREEN ──
-  if (screen === 'upload') {
-    return (
-      <div style={{ background:C.bg, minHeight:'60vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'2rem', fontFamily:"'Poppins',sans-serif" }}>
-        <div style={{ width:'100%', maxWidth:580 }}>
-          {/* Header */}
-          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:28 }}>
-            <div style={{ width:36, height:36, background:'#f59e0b', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🚛</div>
-            <div>
-              <div style={{ fontSize:18, fontWeight:900, color:C.text, lineHeight:1.1 }}>Excavation <span style={{ color:'#f59e0b' }}>Movement Analytics</span></div>
-              <div style={{ fontSize:11, color:C.sub, marginTop:2, fontFamily:'monospace' }}>RWS 2.0 · Excavation Analytics</div>
-            </div>
-          </div>
-
-          {/* Drop zone */}
-          <div
-            style={{ border:`1.5px dashed ${C.amber}66`, borderRadius:14, padding:'2rem 1.5rem', textAlign:'center', cursor:'pointer', background:C.panel, position:'relative', marginBottom:14, transition:'border-color 0.2s' }}
-            onClick={() => fileInputRef2.current?.click()}
-            onDragOver={e => e.preventDefault()}
-            onDrop={e => { e.preventDefault(); addFiles([...e.dataTransfer.files]); }}
-          >
-            <input ref={fileInputRef2} type="file" multiple accept=".xlsx,.xls,.csv" style={{ display:'none' }}
-              onChange={e => addFiles([...e.target.files])} />
-            <div style={{ fontSize:36, marginBottom:10 }}>📂</div>
-            <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>Drag & drop Excel files here</div>
-            <div style={{ fontSize:11, color:C.sub, fontFamily:'monospace' }}>.xlsx · .xls · .csv · select multiple with ⌘+click</div>
-          </div>
-
-          {/* File chips */}
-          {ttFiles.length > 0 && (
-            <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:14 }}>
-              {ttFiles.map((f,i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:6, background:C.panel, border:`1px solid ${C.border}`, borderRadius:8, padding:'5px 12px', fontSize:11, fontFamily:'monospace' }}>
-                  <span style={{ width:6, height:6, borderRadius:'50%', background:'#10b981', flexShrink:0 }}/>
-                  <span style={{ color:C.text }}>{f.name}</span>
-                  <span onClick={() => removeFile(i)} style={{ cursor:'pointer', color:C.sub, marginLeft:4, fontSize:14, lineHeight:1 }}>×</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Volume input */}
-          <div style={{ display:'flex', alignItems:'center', gap:10, background:C.panel, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px 16px', marginBottom:12 }}>
-            <span style={{ fontSize:11, color:C.sub, fontFamily:'monospace', whiteSpace:'nowrap' }}>Volume per tipper load</span>
-            <input id="tt-vol-input" type="number" defaultValue={11} min={1} max={30} step={0.5}
-              style={{ background:'transparent', border:'none', outline:'none', fontSize:20, fontWeight:700, fontFamily:'monospace', color:'#f59e0b', width:60, textAlign:'right' }}/>
-            <span style={{ fontSize:11, color:C.sub, fontFamily:'monospace' }}>m³ / trip</span>
-            <span style={{ fontSize:10, color:C.muted, fontFamily:'monospace', marginLeft:'auto' }}>typical: 8–14 m³</span>
-          </div>
-
-          {/* Progress */}
-          {parsing && (
-            <div style={{ marginBottom:10 }}>
-              <div style={{ height:3, background:C.inputBg, borderRadius:2, overflow:'hidden', marginBottom:6 }}>
-                <div style={{ height:'100%', background:'#f59e0b', borderRadius:2, transition:'width 0.3s', width:`${parsePct}%` }}/>
-              </div>
-              <div style={{ fontSize:11, color:C.sub, fontFamily:'monospace' }}>{parseMsg}</div>
-            </div>
-          )}
-          {!parsing && parseMsg && <div style={{ fontSize:11, color:'#10b981', fontFamily:'monospace', marginBottom:10 }}>{parseMsg}</div>}
-
-          {/* Parse button */}
-          <button onClick={handleParse} disabled={!ttFiles.length || parsing || !chartJsReady}
-            style={{ width:'100%', padding:'13px', background:'#f59e0b', color:'#000', border:'none', borderRadius:12, fontSize:14, fontWeight:800, fontFamily:'inherit', cursor:ttFiles.length&&!parsing?'pointer':'not-allowed', opacity:ttFiles.length&&!parsing?1:0.4, letterSpacing:'0.02em' }}>
-            {parsing ? 'Parsing…' : ttFiles.length > 0 ? `Build dashboard from ${ttFiles.length} file${ttFiles.length>1?'s':''} →` : 'Select files to continue →'}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // ── DASHBOARD SCREEN ──
-  const hourlyTitle = activeDay === 'all' ? 'Hourly distribution — all days' : `Hourly — ${sortedDays[activeDay]}`;
-  const tlTitle = activeDay === 'all' ? 'Trip timeline — all days combined' : `Trip timeline — ${sortedDays[activeDay]}`;
-
-  // KPI card helper
-  const KPI = ({ label, val, color, sub }) => (
-    <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:12, padding:'14px 18px', flex:1, minWidth:130 }}>
-      <div style={{ fontSize:9, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', color:C.sub, marginBottom:8, fontFamily:'monospace' }}>{label}</div>
-      <div style={{ fontSize:26, fontWeight:900, color: color || C.text, lineHeight:1 }}>{val}</div>
-      {sub && <div style={{ fontSize:10, color:C.sub, marginTop:4, fontFamily:'monospace' }}>{sub}</div>}
-    </div>
-  );
-
-  // Chart card helper
-  const ChartCard = ({ title, children, full }) => (
-    <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:12, padding:18, ...(full ? { gridColumn:'1 / -1' } : {}) }}>
-      <div style={{ fontSize:10, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:C.sub, marginBottom:14, fontFamily:'monospace' }}>{title}</div>
-      {children}
-    </div>
-  );
-
-  return (
-    <div style={{ background:C.bg, minHeight:'60vh', padding:'20px 24px', fontFamily:"'Poppins',sans-serif" }}>
-
-      {/* ── HEADER BAR ── */}
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20, flexWrap:'wrap', gap:10 }}>
-        <div>
-          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
-            <span style={{ background:'#f59e0b', color:'#000', fontSize:10, fontWeight:800, padding:'3px 10px', borderRadius:4, letterSpacing:1, textTransform:'uppercase' }}>Excavation</span>
-            <span style={{ color:C.sub, fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:1 }}>Movement Analytics</span>
-          </div>
-          <div style={{ fontSize:18, fontWeight:900, color:C.text }}>RWS 2.0 — Vehicle Trip Records</div>
-          <div style={{ fontSize:11, color:C.sub, marginTop:2, fontFamily:'monospace' }}>
-            {sortedDays[0] || '—'} → {sortedDays[sortedDays.length-1] || '—'} · {ttFiles.length} file{ttFiles.length!==1?'s':''} · {ttRows.length.toLocaleString()} records
-          </div>
-        </div>
-        <div style={{ display:'flex', gap:10, alignItems:'center' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8, background:C.panel, border:`1px solid ${C.border}`, borderRadius:10, padding:'8px 14px' }}>
-            <span style={{ fontSize:10, color:C.sub, fontFamily:'monospace' }}>m³/trip</span>
-            <input type="number" value={volDash} min={1} max={30} step={0.5}
-              onChange={e => setVolDash(parseFloat(e.target.value)||11)}
-              style={{ background:C.inputBg, border:`1px solid ${C.border}`, borderRadius:6, color:'#f59e0b', fontFamily:'monospace', fontSize:14, fontWeight:700, width:56, textAlign:'center', outline:'none', padding:'3px 5px' }}/>
-          </div>
-          <button onClick={() => { setScreen('upload'); setTtRows([]); setSortedDays([]); setTtFiles([]); setParseMsg(''); }}
-            style={{ fontSize:11, color:C.sub, cursor:'pointer', fontFamily:'inherit', border:`1px solid ${C.border}`, borderRadius:8, padding:'7px 14px', background:'transparent', transition:'all 0.15s' }}>
-            ← upload more
-          </button>
-        </div>
-      </div>
-
-      {/* ── KPI ROW ── */}
-      <div style={{ display:'flex', gap:12, marginBottom:20, flexWrap:'wrap' }}>
-        <KPI label="Total trips"       val={total.toLocaleString()}   color='#f59e0b' sub="all files combined" />
-        <KPI label="Days covered"      val={days}                      color='#3b82f6' sub={`${sortedDays[0]||'—'} to ${sortedDays[sortedDays.length-1]||'—'}`} />
-        <KPI label="Avg trips / day"   val={avg}                       color={C.text}  sub={`across ${days} active days`} />
-        <KPI label="Peak day"          val={peakTrips}                 color='#f59e0b' sub={sortedDays[peakIdx]||'—'} />
-        <KPI label="Est. total volume" val={totalVol.toLocaleString()} color='#10b981' sub={`m³ @ ${volDash} m³/trip`} />
-      </div>
-
-      {/* ── DAY TABS ── */}
-      <div style={{ display:'flex', gap:6, marginBottom:16, flexWrap:'wrap' }}>
-        <button onClick={() => setActiveDay('all')}
-          style={{ padding:'5px 14px', border:`1px solid ${activeDay==='all'?'#f59e0b':C.border}`, borderRadius:8, fontSize:11, cursor:'pointer', color:activeDay==='all'?'#000':C.sub, background:activeDay==='all'?'#f59e0b':'transparent', fontFamily:'inherit', fontWeight:600, transition:'all 0.15s' }}>
-          All days
-        </button>
-        {sortedDays.slice(0,30).map((d,i) => (
-          <button key={i} onClick={() => setActiveDay(i)}
-            style={{ padding:'5px 12px', border:`1px solid ${activeDay===i?'#f59e0b':C.border}`, borderRadius:8, fontSize:11, cursor:'pointer', color:activeDay===i?'#000':C.sub, background:activeDay===i?'#f59e0b':'transparent', fontFamily:'inherit', fontWeight:500, transition:'all 0.15s' }}>
-            {d.slice(5)} <span style={{ opacity:0.6, fontSize:10 }}>{dayTrips[i]}</span>
-          </button>
-        ))}
-      </div>
-
-      {/* ── CHARTS ROW 1 ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
-        <ChartCard title="Daily trip count">
-          <div style={{ position:'relative', height:220 }}><canvas ref={chartDailyRef}/></div>
-        </ChartCard>
-        <ChartCard title={hourlyTitle}>
-          <div style={{ position:'relative', height:220 }}><canvas ref={chartHourlyRef}/></div>
-        </ChartCard>
-      </div>
-
-      {/* ── TIMELINE ── */}
-      <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:12, padding:18, marginBottom:14 }}>
-        <div style={{ fontSize:10, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:C.sub, marginBottom:12, fontFamily:'monospace' }}>{tlTitle}</div>
-        <div>{renderTimeline(activeDay)}</div>
-      </div>
-
-      {/* ── CHARTS ROW 2 ── */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
-        <ChartCard title="Estimated volume per day (m³)">
-          <div style={{ position:'relative', height:220 }}><canvas ref={chartVolRef}/></div>
-        </ChartCard>
-        <ChartCard title="Daily summary">
-          <div style={{ overflowX:'auto' }}>
-            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:11, fontFamily:'monospace' }}>
-              <thead>
-                <tr>
-                  {['Date','Day','Trips','Est. Volume','Share'].map(h => (
-                    <th key={h} style={{ textAlign:'left', fontSize:9, letterSpacing:'0.08em', textTransform:'uppercase', color:C.sub, padding:'6px 10px 8px 0', borderBottom:`1px solid ${C.border}`, fontFamily:'monospace' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {sortedDays.map((d,i) => {
-                  const trips = dayTrips[i];
-                  const vol   = Math.round(trips * volDash);
-                  const pct   = total > 0 ? Math.round(trips/total*100) : 0;
-                  const dow   = new Date(d).toLocaleDateString('en-SG', { weekday:'short' });
-                  return (
-                    <tr key={i} style={{ borderBottom:`1px solid ${C.border}` }}
-                      onMouseEnter={e => e.currentTarget.style.background=C.tableHover}
-                      onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-                      <td style={{ padding:'7px 10px 7px 0', color:C.text }}>{d}</td>
-                      <td style={{ padding:'7px 10px 7px 0' }}><span style={{ display:'inline-block', padding:'2px 8px', borderRadius:4, fontSize:9, fontWeight:700, background:'rgba(245,158,11,0.15)', color:'#f59e0b' }}>{dow}</span></td>
-                      <td style={{ padding:'7px 10px 7px 0', fontWeight:700, color:C.text }}>{trips}</td>
-                      <td style={{ padding:'7px 10px 7px 0', color:'#10b981', fontWeight:700 }}>{vol.toLocaleString()} m³</td>
-                      <td style={{ padding:'7px 10px 7px 0', color:C.sub }}>{pct}%</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </ChartCard>
-      </div>
-
-      {/* ── VEHICLE FREQUENCY ── */}
-      <div style={{ background:C.panel, border:`1px solid ${C.border}`, borderRadius:12, padding:18 }}>
-        <div style={{ fontSize:10, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:C.sub, marginBottom:14, fontFamily:'monospace' }}>Top vehicle frequency</div>
-        <div style={{ position:'relative', height:200 }}><canvas ref={chartVehicleRef}/></div>
-      </div>
     </div>
   );
 }
